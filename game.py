@@ -60,9 +60,10 @@ class Background(Sprite):
 class Bird(Sprite):
     def __init__(self, pos):
         super(Bird,self).__init__(source='atlas://images/bird_anim/wing-up',pos=pos)
+        self.boundingbox = Widget()
         self.velocity_y = 0
         self.gravity = -.1 * params.scale
-
+    
     def update(self):
         self.velocity_y += self.gravity
         self.veloctiy_y = max(self.velocity_y, -5*params.scale)
@@ -76,6 +77,15 @@ class Bird(Sprite):
         self.source = 'atlas://images/bird_anim/wing-down'
         sfx_flap.play()
         
+    def collide_widget(self,widget,*args,**kwargs):
+        default = super(Bird,self).collide_widget(widget,
+                                        *args,**kwargs)
+        self.boundingbox.size = [self.size[0]*(2.0/3.0),
+                                 self.size[1]*(1.0/3.0)]
+        self.boundingbox.pos = [self.pos[0]+((self.size[0]*(1.0/3.0))-4),
+                                self.pos[1]+(self.size[1]*(1.0/3.0))]
+        return self.boundingbox.collide_widget(widget)
+    
 class Ground(Sprite):
     def update(self):
         self.x -= 2*params.scale
@@ -153,7 +163,6 @@ class Game(Widget):
 
     def update(self, dt):
         if self.game_over:
-            print('return')
             return False
         
         self.background.update()
@@ -161,12 +170,13 @@ class Game(Widget):
         self.ground.update()
         self.pipes.update(dt)
 
+
         if self.bird.collide_widget(self.ground):
             self.game_over = True
         for pipe in self.pipes.children:
-            if pipe.top_image.collide_widget(self.bird):
+            if self.bird.collide_widget(pipe.top_image):
                 self.game_over = True
-            elif pipe.bottom_image.collide_widget(self.bird):
+            elif self.bird.collide_widget(pipe.bottom_image):
                 self.game_over = True
             elif not pipe.scored and pipe.right < self.bird.x:
                 pipe.scored = True
